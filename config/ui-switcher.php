@@ -57,8 +57,18 @@ return [
     |--------------------------------------------------------------------------
     | Available Fonts
     |--------------------------------------------------------------------------
-    | List of Google Fonts available in the font selector.
-    | All fonts must be available on Google Fonts.
+    | List of fonts available in the font selector. Plain string values keep the
+    | existing behavior and use Filament's default font provider.
+    |
+    | To use another Filament font provider for all fonts, set font_provider and
+    | font_url below. To customize a single option, use the extended array form:
+    |
+    | 'inter' => [
+    |     'label' => 'Inter',
+    |     'family' => 'Inter',
+    |     'provider' => \Filament\FontProviders\LocalFontProvider::class,
+    |     'url' => '/css/fonts.css',
+    | ],
     */
     'fonts' => [
         'Inter',
@@ -68,6 +78,21 @@ return [
         'Nunito Sans',
         'Roboto',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Font Provider
+    |--------------------------------------------------------------------------
+    | Optional default Filament font provider and stylesheet URL used when a font
+    | option does not define its own provider or URL.
+    |
+    | For self-hosted fonts, define @font-face rules in a stylesheet and use:
+    |
+    | 'font_provider' => \Filament\FontProviders\LocalFontProvider::class,
+    | 'font_url' => '/css/fonts.css',
+    */
+    'font_provider' => null,
+    'font_url' => null,
 
     /*
     |--------------------------------------------------------------------------

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Andreia\FilamentUiSwitcher\Livewire;
 
+use Andreia\FilamentUiSwitcher\Support\FontManager;
 use Andreia\FilamentUiSwitcher\Support\UiPreferenceManager;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -29,18 +30,46 @@ final class UiPreferences extends Component implements HasActions, HasSchemas
 
     public bool $hasModeSwitcher = false;
 
+    public bool $hasFontFamily = true;
+
+    public bool $hasFontSize = true;
+
+    public bool $hasColor = true;
+
+    public bool $hasLayout = true;
+
+    public array $defaults = [];
+
+    public ?array $configuredFonts = null;
+
+    public ?string $fontProvider = null;
+
+    public ?string $fontUrl = null;
+
+    public ?array $configuredFontSizeRange = null;
+
+    public ?array $configuredLayouts = null;
+
+    public ?array $configuredCustomColors = null;
+
     public function mount(): void
     {
+        $defaults = $this->getDefaults();
+
         // Load saved preferences
-        $this->font = UiPreferenceManager::get('ui.font', 'Inter');
-        $this->layout = UiPreferenceManager::get('ui.layout', 'sidebar');
-        $this->primaryColor = UiPreferenceManager::get('ui.color', '#6366f1');
-        $this->fontSize = UiPreferenceManager::get('ui.font_size', 16);
-        $this->density = UiPreferenceManager::get('ui.density', 'default');
+        $this->font = UiPreferenceManager::get('ui.font', $defaults['font'] ?? 'Inter');
+        $this->layout = UiPreferenceManager::get('ui.layout', $defaults['layout'] ?? 'sidebar');
+        $this->primaryColor = UiPreferenceManager::get('ui.color', $defaults['color'] ?? '#6366f1');
+        $this->fontSize = UiPreferenceManager::get('ui.font_size', $defaults['font_size'] ?? 16);
+        $this->density = UiPreferenceManager::get('ui.density', $defaults['density'] ?? 'default');
     }
 
     public function setFont(string $font): void
     {
+        if (! collect($this->getAvailableFontsProperty())->contains(fn (array $fontOption): bool => in_array($font, [$fontOption['value'], $fontOption['family'], $fontOption['label']], true))) {
+            return;
+        }
+
         $this->font = $font;
         UiPreferenceManager::set('ui.font', $font);
 
@@ -49,6 +78,10 @@ final class UiPreferences extends Component implements HasActions, HasSchemas
 
     public function setLayout(string $layout): void
     {
+        if (! in_array($layout, $this->getAvailableLayoutsProperty(), true)) {
+            return;
+        }
+
         $this->layout = $layout;
         UiPreferenceManager::set('ui.layout', $layout);
 
@@ -57,6 +90,10 @@ final class UiPreferences extends Component implements HasActions, HasSchemas
 
     public function setColor(string $color): void
     {
+        if (! in_array($color, $this->getCustomColorsProperty(), true)) {
+            return;
+        }
+
         $this->primaryColor = $color;
         UiPreferenceManager::set('ui.color', $color);
 
@@ -65,8 +102,14 @@ final class UiPreferences extends Component implements HasActions, HasSchemas
 
     public function setFontSize($size): void
     {
-        $this->fontSize = (int) $size;
-        UiPreferenceManager::set('ui.font_size', (int) $size);
+        $range = $this->getFontSizeRangeProperty();
+        $size = min(
+            max((int) $size, $range['min']),
+            $range['max'],
+        );
+
+        $this->fontSize = $size;
+        UiPreferenceManager::set('ui.font_size', $size);
 
         $this->dispatch('reload-page');
     }
@@ -84,7 +127,7 @@ final class UiPreferences extends Component implements HasActions, HasSchemas
      */
     public function resetToDefaults(): void
     {
-        $defaults = config('ui-switcher.defaults', []);
+        $defaults = $this->getDefaults();
 
         // Reset to config defaults
         $this->font = $defaults['font'] ?? 'Inter';
@@ -111,7 +154,15 @@ final class UiPreferences extends Component implements HasActions, HasSchemas
      */
     public function getAvailableFontsProperty(): array
     {
-        return config('ui-switcher.fonts', ['Inter', 'Poppins', 'Roboto']);
+        return FontManager::available($this->configuredFonts, $this->fontProvider, $this->fontUrl);
+    }
+
+    /**
+     * Get available layouts from plugin configuration or config
+     */
+    public function getAvailableLayoutsProperty(): array
+    {
+        return $this->configuredLayouts ?? config('ui-switcher.layouts', ['sidebar', 'sidebar-collapsed', 'sidebar-no-topbar', 'topbar']);
     }
 
     /**
@@ -127,7 +178,7 @@ final class UiPreferences extends Component implements HasActions, HasSchemas
      */
     public function getCustomColorsProperty(): array
     {
-        return config('ui-switcher.custom_colors', []);
+        return $this->configuredCustomColors ?? config('ui-switcher.custom_colors', []);
     }
 
     /**
@@ -135,7 +186,7 @@ final class UiPreferences extends Component implements HasActions, HasSchemas
      */
     public function getFontSizeRangeProperty(): array
     {
-        return config('ui-switcher.font_size_range', ['min' => 12, 'max' => 20]);
+        return $this->configuredFontSizeRange ?? config('ui-switcher.font_size_range', ['min' => 12, 'max' => 20]);
     }
 
     public function resetAction(): Action
@@ -155,5 +206,10 @@ final class UiPreferences extends Component implements HasActions, HasSchemas
     public function render()
     {
         return view('filament-ui-switcher::livewire.ui-switcher');
+    }
+
+    protected function getDefaults(): array
+    {
+        return array_replace(config('ui-switcher.defaults', []), $this->defaults);
     }
 }

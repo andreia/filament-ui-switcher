@@ -78,7 +78,7 @@ This will create a `config/ui-switcher.php` file where you can customize:
 ```
 
 **Available Fonts:**
-Add or remove Google Fonts from the font picker:
+Add or remove fonts from the font picker:
 ```php
 'fonts' => [
     'Inter',
@@ -87,9 +87,37 @@ Add or remove Google Fonts from the font picker:
     'DM Sans',
     'Nunito Sans',
     'Roboto',
-    // Add any Google Font you want:
+    // Add any font supported by your configured Filament font provider:
     // 'Montserrat',
     // 'Open Sans',
+],
+```
+
+Use self-hosted fonts with Filament's local font provider:
+```php
+'defaults' => [
+    'font' => 'Inter',
+    // ...
+],
+
+'font_provider' => \Filament\FontProviders\LocalFontProvider::class,
+'font_url' => '/css/fonts.css',
+
+'fonts' => [
+    'Inter',
+    'Poppins',
+],
+```
+
+You can also configure the provider or URL per font:
+```php
+'fonts' => [
+    'inter' => [
+        'label' => 'Inter',
+        'family' => 'Inter',
+        'provider' => \Filament\FontProviders\LocalFontProvider::class,
+        'url' => '/css/fonts.css',
+    ],
 ],
 ```
 
@@ -188,6 +216,70 @@ By default, the mode switcher is hidden. If you want to include Filament's nativ
 ->plugin(
     FilamentUiSwitcherPlugin::make()
         ->withModeSwitcher()
+)
+```
+
+#### Hide Settings Sections
+
+The font family, font size, color, and layout controls are visible by default. You can hide any of them from the settings modal using the plugin configuration:
+
+```php
+->plugin(
+    FilamentUiSwitcherPlugin::make()
+        ->displayFontFamily(false)
+        ->displayFontSize(false)
+        ->displayColor(false)
+        ->displayLayout(false)
+)
+```
+
+#### Configure Options in the Panel Provider
+
+The published config file remains the default source of options. You can override any of those values per panel using fluent plugin methods:
+
+```php
+use Filament\FontProviders\LocalFontProvider;
+
+->plugin(
+    FilamentUiSwitcherPlugin::make()
+        ->defaults([
+            'font' => 'Inter',
+            'color' => '#6366f1',
+            'layout' => 'sidebar',
+            'font_size' => 16,
+            'density' => 'default',
+        ])
+        ->fonts(
+            fonts: [
+                'Inter',
+                'Poppins',
+            ],
+            url: asset('css/fonts.css'),
+            provider: LocalFontProvider::class,
+        )
+        ->fontSizeRange(min: 12, max: 20)
+        ->layouts([
+            'sidebar',
+            'topbar',
+        ])
+        ->customColors([
+            '#6366f1',
+            '#10b981',
+        ])
+)
+```
+
+These methods may also receive closures, which are evaluated when the panel renders:
+
+```php
+->plugin(
+    FilamentUiSwitcherPlugin::make()
+        ->fonts(fn (): array => tenant()->fonts ?? ['Inter'])
+        ->customColors(fn (): array => tenant()->brand_colors ?? ['#6366f1'])
+        ->defaults(fn (): array => [
+            'font' => tenant()->font_family ?? 'Inter',
+            'color' => tenant()->primary_color ?? '#6366f1',
+        ])
 )
 ```
 

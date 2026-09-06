@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Andreia\FilamentUiSwitcher\Http\Middleware;
 
+use Andreia\FilamentUiSwitcher\FilamentUiSwitcherPlugin;
+use Andreia\FilamentUiSwitcher\Support\FontManager;
 use Andreia\FilamentUiSwitcher\Support\UiPreferenceManager;
 use Closure;
 use Filament\Facades\Filament;
@@ -14,15 +16,30 @@ final class ApplyUiPreferences
 {
     public function handle(Request $request, Closure $next)
     {
+        // dd(session()->all());
         // At this point, session middleware has run, so we can access preferences
         if (Filament::isServing()) {
             $panel = Filament::getCurrentPanel();
 
             if ($panel) {
+                $plugin = FilamentUiSwitcherPlugin::getForPanel($panel);
+                $defaults = $plugin?->getDefaults() ?? config('ui-switcher.defaults', []);
+                $layouts = $plugin?->getLayouts() ?? config('ui-switcher.layouts', []);
+
                 // Load preferences (session is now available)
-                $font = UiPreferenceManager::get('ui.font', config('ui-switcher.defaults.font', 'Inter'));
-                $color = UiPreferenceManager::get('ui.color', config('ui-switcher.defaults.color', '#6366f1'));
-                $layout = UiPreferenceManager::get('ui.layout', config('ui-switcher.defaults.layout', 'sidebar'));
+                $font = FontManager::resolve(
+                    UiPreferenceManager::get('ui.font', $defaults['font'] ?? 'Inter'),
+                    $plugin?->getFonts(),
+                    $plugin?->getFontProvider(),
+                    $plugin?->getFontUrl(),
+                    $defaults['font'] ?? 'Inter',
+                );
+                $color = UiPreferenceManager::get('ui.color', $defaults['color'] ?? '#6366f1');
+                $layout = UiPreferenceManager::get('ui.layout', $defaults['layout'] ?? 'sidebar');
+
+                if (filled($layouts) && ! in_array($layout, $layouts, true)) {
+                    $layout = $defaults['layout'] ?? 'sidebar';
+                }
 
                 // Register color GLOBALLY using FilamentColor
                 // This generates a proper Filament color palette and must run early
@@ -34,17 +51,14 @@ final class ApplyUiPreferences
                 //     'primary' => $color,
                 // ]);
 
-                $panel->font($font);
+                $panel->font($font['family'], url: $font['url'], provider: $font['provider']);
 
-                if ($layout === 'topbar') {
-                    $panel->topNavigation();
-                } elseif ($layout === 'sidebar-collapsed') {
-                    $panel->sidebarCollapsibleOnDesktop();
-                } elseif ($layout === 'sidebar-no-topbar') {
-                    $panel->topbar(false);
-                } else {
-                    $panel->sidebarFullyCollapsibleOnDesktop(false);
-                }
+                match ($layout) {
+                    'topbar' => $panel->topNavigation(),
+                    'sidebar-collapsed' => $panel->sidebarCollapsibleOnDesktop(),
+                    'sidebar-no-topbar' => $panel->topbar(false),
+                    default => $panel->sidebarFullyCollapsibleOnDesktop(false),
+                };
             }
         }
 
