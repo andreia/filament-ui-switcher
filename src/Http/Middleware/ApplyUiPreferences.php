@@ -16,7 +16,7 @@ final class ApplyUiPreferences
 {
     public function handle(Request $request, Closure $next)
     {
-        //dd(session()->all());
+        // dd(session()->all());
         // At this point, session middleware has run, so we can access preferences
         if (Filament::isServing()) {
             $panel = Filament::getCurrentPanel();

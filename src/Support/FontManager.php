@@ -12,8 +12,7 @@ final class FontManager
         ?string $defaultProvider = null,
         ?string $defaultUrl = null,
         mixed $defaultFont = null,
-    ): array
-    {
+    ): array {
         $fonts = self::available($fonts, $defaultProvider, $defaultUrl);
 
         foreach ($fonts as $fontOption) {
@@ -29,8 +28,7 @@ final class FontManager
         ?array $fonts = null,
         ?string $defaultProvider = null,
         ?string $defaultUrl = null,
-    ): array
-    {
+    ): array {
         $fonts ??= config('ui-switcher.fonts', ['Inter', 'Poppins', 'Roboto']);
         $defaultProvider ??= config('ui-switcher.font_provider');
         $defaultUrl ??= config('ui-switcher.font_url');
@@ -47,8 +45,7 @@ final class FontManager
         int|string|null $key = null,
         ?string $defaultProvider = null,
         ?string $defaultUrl = null,
-    ): array
-    {
+    ): array {
         $defaultProvider ??= config('ui-switcher.font_provider');
         $defaultUrl ??= config('ui-switcher.font_url');
 
